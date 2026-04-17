@@ -1,32 +1,37 @@
-import re
 import pdfplumber
+import pandas as pd
 
 def extract_from_pdf(file):
     data = []
 
     with pdfplumber.open(file) as pdf:
         for page in pdf.pages:
-            text = page.extract_text()
-            if not text:
-                continue
+            tables = page.extract_tables()
 
-            lines = text.split("\n")
+            for table in tables:
+                for row in table:
+                    if not row:
+                        continue
 
-            for line in lines:
-                # Adjust this regex based on your document format
-                match = re.search(r"(.*)\s+(\d{4})\s+(CSE|ECE|ME|EEE|CIVIL)\s+(.*)", line)
+                    row = [str(cell).strip() if cell else "" for cell in row]
 
-                if match:
-                    college = match.group(1).strip()
-                    cet_code = match.group(2)
-                    branch = match.group(3)
-                    location = match.group(4).strip()
+                    # Adjust column positions based on your PDF
+                    # Try printing row to understand structure
+                    print(row)
 
-                    data.append({
-                        "College Name": college,
-                        "CET Code": cet_code,
-                        "Branch": branch,
-                        "Location/District": location
-                    })
+                    if len(row) >= 4:
+                        college = row[0]
+                        cet_code = row[1]
+                        branch = row[2]
+                        location = row[3]
+
+                        # Basic validation
+                        if cet_code.isdigit():
+                            data.append({
+                                "College Name": college,
+                                "CET Code": cet_code,
+                                "Branch": branch,
+                                "Location/District": location
+                            })
 
     return data
